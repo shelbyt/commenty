@@ -88,7 +88,7 @@ def load_creds_login():
 
 def sel_init():
     options = Options()
-    #options.add_argument("--headless")
+    options.add_argument("--headless")
     browser = webdriver.Firefox(firefox_options=options, executable_path='/home/shelbyt/geckodriver')
     return browser
     
@@ -224,6 +224,19 @@ def article_comments_load(browser,article_url):
         profile_url.append(user.get_attribute("href"))
     print len(profile_url)
 
+def insert_article_user_comments(browser, db, cursor):
+    login_flag = 0
+
+    for profile in profile_url:
+        browser.get(profile)
+        if login_flag == 0:
+            load_creds_login()
+            login_flag = 1
+
+        profile_comment_load(browser)
+        gather_comments(browser,db,cursor)
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-p','--profile',required=False)
@@ -245,6 +258,7 @@ if __name__ == '__main__':
     #load_creds_login()
     #time.sleep(10)
     article_comments_load(browser,article_url)
+    insert_article_user_comments(browser,db,cursor)
 
     # If we want to get commnets from the profile page
     #browser.get(profile)
