@@ -1,6 +1,7 @@
 from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.firefox.options import Options
+from selenium.webdriver.support.ui import WebDriverWait
 import time
 import datetime
 import re
@@ -19,6 +20,8 @@ db_time = ''
 db_comment = ""
 db_article_name = ""
 db_likes = ""
+
+article_url = ""
 
 
 def month_to_num(short_date):
@@ -62,21 +65,21 @@ def load_creds_login():
     uname = f.readline().split(' ')[1]
     pw = f.readline().split(' ')[1]
     f.close()
-    
-    loginID = browser.find_element_by_id("username").send_keys(uname)             # Input username
-    loginPass = browser.find_element_by_id("password").send_keys(pw)     # Input password
+    # Input username
+    loginID = browser.find_element_by_id("username").send_keys(uname)             
+    # Input password
+    loginPass = browser.find_element_by_id("password").send_keys(pw)    
     loginReady = browser.find_element_by_class_name("basic-login-submit")
     loginReady.submit()
     time.sleep(10) #this is needed because it takes time to login
 
 def sel_init():
     options = Options()
-    options.add_argument("--headless")
+    #options.add_argument("--headless")
     browser = webdriver.Firefox(firefox_options=options, executable_path='/home/shelbyt/geckodriver')
     return browser
     
 def profile_comment_load(browser):
-
     #for i in range(0,3):
     #    print "range"
     #    load_more = browser.find_element_by_class_name("load-more").click()
@@ -168,27 +171,116 @@ def gather_comments(browser,db,cursor):
         ################## PERFORM SQL QUERY ##############
    
         # This works but it causes weird formatting issues because I'm not specifiyng the column
-        #sql="insert into Members values ('%s', '%s','%s','%s','%s','%s','%s')" % (db_user_id,db_user_name,db_date,db_time,db_comment,db_article_name,db_likes)
+        # sql="insert into Members values ('%s', '%s','%s','%s','%s','%s','%s')" 
+        #     % (db_user_id,db_user_name,db_date,db_time,db_comment,db_article_name,db_likes)
         sql="insert into Members(user_id,user_name,date,time,comment,article_name,likes) VALUES (%s, %s,%s,%s,%s,%s,%s)"
         num_rows=cursor.execute(sql,(db_user_id,db_user_name,db_date,db_time,db_comment,db_article_name,db_likes))
         db.commit()
         date_time = []
 
+def article_comments_load(browser):
+
+    browser.find_element_by_class_name("comments_header").click()
+    time.sleep(10)
+    
+    frames = browser.find_elements_by_tag_name("iframe")
+    for frame in frames:
+        try:
+            browser.switch_to_frame(frame)
+            print browser.page_source
+        except Exception as e:
+            print e
+    exit(0)
+
+    print len(frames)
+    frames = browser.find_elements_by_tag_name("iframe")
+    print len(frames)
+    exit(0)
+    #browser.switch_to_frame(1)
+   # print "clicked comment header"
+   # time.sleep(10)
+   # browser.get(str(article_url)+"#comments_sector")
+   # time.sleep(10)
+   #comment = browser.find_element_by_class_name("talk-stream-comment-container")
+   #print comment
+
+    #print "resizing window"
+    #time.sleep(10)
+    #browser.execute_script('window.scrollTo(0, document.body.scrollHeight);')
+    #print "sleepa fter scroll"
+    exit(0)
+
+    time.sleep(10)
+
+
+    #cblk = browser.find_elements_by_class_name("sector")
+    #cblk = browser.find_elements_by_class_name("module")
+    cblk = browser.find_elements_by_class_name("stream")
+    print cblk
+
+    for user in cblk: 
+       url = user.find_element_by_tag_name('a').get_attribute('href')
+       print url
+    
+    #browser.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+    #time.sleep(20)
+
+    #load_more = browser.find_elements_by_css_selector("div.talk-load-more.button")
+    #load_more = browser.find_elements_by_xpath('//*[@id="stream"]/div[3]/div[2]/div/div/div/div/div[3]/button')
+    #print load_more
+    #print "sleeping"
+    #time.sleep(10)
+
+    button_list = []
+
+    while True:
+        try:
+            load_more = browser.find_elements_by_class_name("talk-load-more")
+            print load_more
+            for button_class in load_more:
+                print button_class
+                try:
+                    button_class.find_element_by_tag('button').click()
+                except Exceptions as e:
+                    print e
+            #load_more = browser.find_element_by_class_name("talk-load-more").click()
+            #load_more = browser.find_element_by_css_selector("div.talk-load-more").click()
+            time.sleep(3)
+        except Exception as e:
+            print e
+            break
+    print "Complete Loading Article Comments"
+
+
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('-p','--profile',required=True)
+    parser.add_argument('-p','--profile',required=False)
+    parser.add_argument('-a','--article',required=True)
     args = vars(parser.parse_args())
     profile = args['profile']
+    article = args['article']
+    article_url = article
 
     db = load_db()
-    cursor=db.cursor()
+    cursor = db.cursor()
 
     browser = sel_init()
-    browser.get(profile)
 
+    # If we want to get userlist from the profile page
+    browser.get("https://accounts.wsj.com/login?target="+str(article))
+    print "sleeping"
     load_creds_login()
-    profile_comment_load(browser)
-    gather_comments(browser,db,cursor)
+    time.sleep(10)
+    article_comments_load(browser)
+
+    # If we want to get commnets from the profile page
+    #browser.get(profile)
+    #load_creds_login()
+    #profile_comment_load(browser)
+    #gather_comments(browser,db,cursor)
+
     close_db(db)
 
 
