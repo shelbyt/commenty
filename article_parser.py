@@ -21,7 +21,6 @@ db_comment = ""
 db_article_name = ""
 db_likes = ""
 
-article_url = ""
 profile_url = []
 
 secret_login = ""
@@ -192,7 +191,10 @@ def gather_comments(browser,db,cursor):
         db.commit()
         date_time = []
 
-def article_comments_load(browser):
+def article_comments_load(browser,article_url):
+
+    global profile_url
+
     # Access comments
     print secret_comments
     comment_url = secret_comments+str(article_url)
@@ -228,8 +230,7 @@ if __name__ == '__main__':
     parser.add_argument('-a','--article',required=True)
     args = vars(parser.parse_args())
     profile = args['profile']
-    article = args['article']
-    article_url = article
+    article_url = args['article']
     
     load_secret()
 
@@ -243,7 +244,7 @@ if __name__ == '__main__':
     #print "sleeping"
     #load_creds_login()
     #time.sleep(10)
-    article_comments_load(browser)
+    article_comments_load(browser,article_url)
 
     # If we want to get commnets from the profile page
     #browser.get(profile)
