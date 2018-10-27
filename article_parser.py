@@ -22,6 +22,10 @@ db_article_name = ""
 db_likes = ""
 
 article_url = ""
+profile_url = []
+
+secret_login = ""
+secret_comments = ""
 
 
 def month_to_num(short_date):
@@ -38,6 +42,16 @@ def month_to_num(short_date):
     if short_date == "Nov": return 11
     if short_date == "Dec": return 12
     return -1
+
+def load_secret():
+    fname = "secret_sauce.dat"
+    f = open(fname,"r")
+    global secret_login
+    secret_login = f.readline().split(' ')[1].rstrip()
+    global secret_comments
+    secret_comments = f.readline().split(' ')[1].rstrip()
+    print secret_comments
+    f.close()
 
 def load_db():
     fname="dbcreds.dat" 
@@ -179,80 +193,34 @@ def gather_comments(browser,db,cursor):
         date_time = []
 
 def article_comments_load(browser):
-
-    browser.find_element_by_class_name("comments_header").click()
-    time.sleep(10)
-    
-    frames = browser.find_elements_by_tag_name("iframe")
-    for frame in frames:
-        try:
-            browser.switch_to_frame(frame)
-            print browser.page_source
-        except Exception as e:
-            print e
-    exit(0)
-
-    print len(frames)
-    frames = browser.find_elements_by_tag_name("iframe")
-    print len(frames)
-    exit(0)
-    #browser.switch_to_frame(1)
-   # print "clicked comment header"
-   # time.sleep(10)
-   # browser.get(str(article_url)+"#comments_sector")
-   # time.sleep(10)
-   #comment = browser.find_element_by_class_name("talk-stream-comment-container")
-   #print comment
-
-    #print "resizing window"
-    #time.sleep(10)
-    #browser.execute_script('window.scrollTo(0, document.body.scrollHeight);')
-    #print "sleepa fter scroll"
-    exit(0)
-
+    # Access comments
+    print secret_comments
+    comment_url = secret_comments+str(article_url)
+    print comment_url
+    # Load browser
+    browser.get(comment_url)
     time.sleep(10)
 
-
-    #cblk = browser.find_elements_by_class_name("sector")
-    #cblk = browser.find_elements_by_class_name("module")
-    cblk = browser.find_elements_by_class_name("stream")
-    print cblk
-
-    for user in cblk: 
-       url = user.find_element_by_tag_name('a').get_attribute('href')
-       print url
-    
-    #browser.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-    #time.sleep(20)
-
-    #load_more = browser.find_elements_by_css_selector("div.talk-load-more.button")
-    #load_more = browser.find_elements_by_xpath('//*[@id="stream"]/div[3]/div[2]/div/div/div/div/div[3]/button')
-    #print load_more
-    #print "sleeping"
-    #time.sleep(10)
-
-    button_list = []
-
+    # First load the entire page by clicking the button, works for up to 1000 comments
     while True:
         try:
-            load_more = browser.find_elements_by_class_name("talk-load-more")
-            print load_more
-            for button_class in load_more:
-                print button_class
-                try:
-                    button_class.find_element_by_tag('button').click()
-                except Exceptions as e:
-                    print e
-            #load_more = browser.find_element_by_class_name("talk-load-more").click()
-            #load_more = browser.find_element_by_css_selector("div.talk-load-more").click()
-            time.sleep(3)
+            loader = browser.find_elements_by_xpath("//*[@class='talk-load-more']/button")
+            # The last button on the page will be the one to load more. Other buttons on the page
+            # Are for loading replies. Don't think replies are that useful
+            loader[len(loader)-1].click()
+            time.sleep(5)
         except Exception as e:
             print e
             break
-    print "Complete Loading Article Comments"
+    print "Complete Loading Comments"
 
+    # We want to keep a list of the profile urls so we can access later
+    url_list = browser.find_elements_by_xpath("//*[@class='talk-stream-comment-container']/div/div/div/a")
 
-
+    # Insert into global list here
+    for user in url_list:
+        profile_url.append(user.get_attribute("href"))
+    print len(profile_url)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -262,6 +230,8 @@ if __name__ == '__main__':
     profile = args['profile']
     article = args['article']
     article_url = article
+    
+    load_secret()
 
     db = load_db()
     cursor = db.cursor()
@@ -269,10 +239,10 @@ if __name__ == '__main__':
     browser = sel_init()
 
     # If we want to get userlist from the profile page
-    browser.get("https://accounts.wsj.com/login?target="+str(article))
-    print "sleeping"
-    load_creds_login()
-    time.sleep(10)
+    #browser.get(secret_login+str(article))
+    #print "sleeping"
+    #load_creds_login()
+    #time.sleep(10)
     article_comments_load(browser)
 
     # If we want to get commnets from the profile page
