@@ -109,7 +109,7 @@ def profile_comment_load(browser):
         except Exception as e:
             print e
             break
-    print "Complete Loading Comments"
+    print "Complete Loading User Comment Page" 
 
 def gather_comments(browser,db,cursor):
 
@@ -186,6 +186,10 @@ def gather_comments(browser,db,cursor):
         # This works but it causes weird formatting issues because I'm not specifiyng the column
         # sql="insert into Members values ('%s', '%s','%s','%s','%s','%s','%s')" 
         #     % (db_user_id,db_user_name,db_date,db_time,db_comment,db_article_name,db_likes)
+
+        #optimiztion 1 -> Make sure only UNIQUE USERS are inserted into the profile_url list when we're iterating comments
+        #optimization 2 -> Check if user exists in SQLdb
+        #optimization 3 -> maybe we should get replies
         sql="insert into Members(user_id,user_name,date,time,comment,article_name,likes) VALUES (%s, %s,%s,%s,%s,%s,%s)"
         num_rows=cursor.execute(sql,(db_user_id,db_user_name,db_date,db_time,db_comment,db_article_name,db_likes))
         db.commit()
@@ -214,7 +218,7 @@ def article_comments_load(browser,article_url):
         except Exception as e:
             print e
             break
-    print "Complete Loading Comments"
+    print "Complete Loading Article Comments"
 
     # We want to keep a list of the profile urls so we can access later
     url_list = browser.find_elements_by_xpath("//*[@class='talk-stream-comment-container']/div/div/div/a")
