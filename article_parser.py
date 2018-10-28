@@ -188,8 +188,6 @@ def gather_comments(browser,db,cursor):
         # sql="insert into Members values ('%s', '%s','%s','%s','%s','%s','%s')" 
         #     % (db_user_id,db_user_name,db_date,db_time,db_comment,db_article_name,db_likes)
 
-        #optimization 2 -> Check if user exists in SQLdb
-        #optimization 3 -> maybe we should get replies
         sql="insert into Members(user_id,user_name,date,time,comment,article_name,likes) VALUES (%s, %s,%s,%s,%s,%s,%s)"
         num_rows=cursor.execute(sql,(db_user_id,db_user_name,db_date,db_time,db_comment,db_article_name,db_likes))
         db.commit()
@@ -227,9 +225,18 @@ def article_comments_load(browser,article_url):
     for user in url_list:
         # Need to test if this works to maintain a unique list within article
         # This is useful especially if we're getting replies
+        # If a user comments twice, only keep one.
         if user not in profile_url:
-            profile_url.append(user.get_attribute("href"))
-    print len(profile_url)
+            # Get the actual users profile url here
+            # TODO(shelbyt): Fix bad naming user is a userblock
+            match = re.search('.*\/(.*)\?',user.get_attribute("href"))
+            # Returns a user_id which we can match with the database list
+            article_user_id = str(match.group(1)) 
+            # If the user_id from the url isn't found in the database list then
+            #    we can insert it.
+            if article_user_id not in unique_users:
+                profile_url.append(user.get_attribute("href"))
+    return len(profile_url)
 
 def insert_article_user_comments(browser, db, cursor):
     login_flag = 0
@@ -276,8 +283,14 @@ if __name__ == '__main__':
     #print "sleeping"
     #load_creds_login()
     #time.sleep(10)
-    article_comments_load(browser,article_url)
-    insert_article_user_comments(browser,db,cursor)
+
+
+    to_insert = article_comments_load(browser,article_url)
+
+    # A return of 0 means there are no new users to insert
+    #    probably not the greatest return value 
+    if to_insert != 0:
+        insert_article_user_comments(browser,db,cursor)
 
     # If we want to get commnets from the profile page
     #browser.get(profile)
