@@ -245,7 +245,7 @@ def insert_article_user_comments(browser, db, cursor):
 
 def get_unique_user_list(db,cursor):
     # Get list of users from the table so we don't reinsert them
-    sql='select distinct user_name from Members'
+    sql='select distinct user_id from Members'
     num_rows=cursor.execute(sql)
     db.commit()
 
