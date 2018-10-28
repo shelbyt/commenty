@@ -22,6 +22,7 @@ db_article_name = ""
 db_likes = ""
 
 profile_url = []
+unique_users = []
 
 secret_login = ""
 secret_comments = ""
@@ -187,7 +188,6 @@ def gather_comments(browser,db,cursor):
         # sql="insert into Members values ('%s', '%s','%s','%s','%s','%s','%s')" 
         #     % (db_user_id,db_user_name,db_date,db_time,db_comment,db_article_name,db_likes)
 
-        #optimiztion 1 -> Make sure only UNIQUE USERS are inserted into the profile_url list when we're iterating comments
         #optimization 2 -> Check if user exists in SQLdb
         #optimization 3 -> maybe we should get replies
         sql="insert into Members(user_id,user_name,date,time,comment,article_name,likes) VALUES (%s, %s,%s,%s,%s,%s,%s)"
@@ -225,7 +225,10 @@ def article_comments_load(browser,article_url):
 
     # Insert into global list here
     for user in url_list:
-        profile_url.append(user.get_attribute("href"))
+        # Need to test if this works to maintain a unique list within article
+        # This is useful especially if we're getting replies
+        if user not in profile_url:
+            profile_url.append(user.get_attribute("href"))
     print len(profile_url)
 
 def insert_article_user_comments(browser, db, cursor):
@@ -240,6 +243,17 @@ def insert_article_user_comments(browser, db, cursor):
         profile_comment_load(browser)
         gather_comments(browser,db,cursor)
 
+def get_unique_user_list(db,cursor):
+    # Get list of users from the table so we don't reinsert them
+    sql='select distinct user_name from Members'
+    num_rows=cursor.execute(sql)
+    db.commit()
+
+    db_list = list(cursor.fetchall())
+
+    # Things are returned as a list tuple so need extra array index
+    for i in range(0,len(db_list)):
+        unique_users.append(db_list[i][0])
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -253,6 +267,7 @@ if __name__ == '__main__':
 
     db = load_db()
     cursor = db.cursor()
+    get_unique_user_list(db,cursor)
 
     browser = sel_init()
 
