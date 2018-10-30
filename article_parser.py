@@ -102,13 +102,18 @@ def profile_comment_load(browser):
     
     # Use this to press the 'load more' button until there is nothing left'
     # can also use the 'page num' selector from the page itself to find how many pages to iterate
+    index = 0
 
     while True:
         try:
             load_more = browser.find_element_by_class_name("load-more").click()
             time.sleep(3)
+            index = index + 1
+            if (index%50) == 0:
+                print "50 Pages loaded"
         except Exception as e:
             print e
+            print index
             break
     print "Complete Loading User Comment Page" 
 
@@ -242,6 +247,7 @@ def insert_article_user_comments(browser, db, cursor):
     login_flag = 0
 
     for profile in profile_url:
+        print "Trying to load = " + profile
         browser.get(profile)
         if login_flag == 0:
             load_creds_login()
@@ -249,6 +255,7 @@ def insert_article_user_comments(browser, db, cursor):
 
         profile_comment_load(browser)
         gather_comments(browser,db,cursor)
+        print "Captured User Sucessfully"
 
 def get_unique_user_list(db,cursor):
     # Get list of users from the table so we don't reinsert them
@@ -265,7 +272,7 @@ def get_unique_user_list(db,cursor):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-p','--profile',required=False)
-    parser.add_argument('-a','--article',required=True)
+    parser.add_argument('-a','--article',required=False)
     args = vars(parser.parse_args())
     profile = args['profile']
     article_url = args['article']
@@ -293,9 +300,12 @@ if __name__ == '__main__':
         insert_article_user_comments(browser,db,cursor)
 
     # If we want to get commnets from the profile page
-    #browser.get(profile)
-    #load_creds_login()
-    #profile_comment_load(browser)
+    ###print "Load profile"
+    ###browser.get(profile)
+    ###print "Logging in"
+    ###load_creds_login()
+    ###print "Loading all pages"
+    ###profile_comment_load(browser)
     #gather_comments(browser,db,cursor)
 
     close_db(db)
