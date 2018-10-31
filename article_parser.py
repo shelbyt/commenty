@@ -228,19 +228,20 @@ def article_comments_load(browser,article_url):
 
     # Insert into global list here
     for user in url_list:
-        # Need to test if this works to maintain a unique list within article
-        # This is useful especially if we're getting replies
-        # If a user comments twice, only keep one.
-        if user not in profile_url:
-            # Get the actual users profile url here
-            # TODO(shelbyt): Fix bad naming user is a userblock
-            match = re.search('.*\/(.*)\?',user.get_attribute("href"))
-            # Returns a user_id which we can match with the database list
-            article_user_id = str(match.group(1)) 
-            # If the user_id from the url isn't found in the database list then
-            #    we can insert it.
-            if article_user_id not in unique_users:
-                profile_url.append(user.get_attribute("href"))
+        # Get the actual users profile url here
+        # TODO(shelbyt): Fix bad naming user is a userblock
+        article_user_url = re.search('.*\/(.*)\?',user.get_attribute("href"))
+        # Returns a user_id which we can match with the database list
+        article_user_id = str(article_user_url.group(1)) 
+        # If the user_id from the url isn't found in the database list then
+        #    we can insert it.
+        # Evaluate left hand side first to make fewer reqests to the database
+        if article_user_url not in profile_url and article_user_id not in unique_users:
+            profile_url.append(user.get_attribute("href"))
+
+    # Write URL's to a file
+    print len(profile_url)
+
     return len(profile_url)
 
 def insert_article_user_comments(browser, db, cursor):
@@ -282,7 +283,6 @@ if __name__ == '__main__':
     db = load_db()
     cursor = db.cursor()
     get_unique_user_list(db,cursor)
-
     browser = sel_init()
 
     # If we want to get userlist from the profile page
@@ -290,7 +290,6 @@ if __name__ == '__main__':
     #print "sleeping"
     #load_creds_login()
     #time.sleep(10)
-
 
     to_insert = article_comments_load(browser,article_url)
 
