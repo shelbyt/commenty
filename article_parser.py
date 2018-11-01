@@ -230,18 +230,18 @@ def article_comments_load(browser,article_url):
     for user in url_list:
         # Get the actual users profile url here
         # TODO(shelbyt): Fix bad naming user is a userblock
-        article_user_url = re.search('.*\/(.*)\?',user.get_attribute("href"))
+        article_user_url = user.get_attribute("href")
+        match = re.search('.*\/(.*)\?',article_user_url)
         # Returns a user_id which we can match with the database list
-        article_user_id = str(article_user_url.group(1)) 
+        article_user_id = str(match.group(1)) 
         # If the user_id from the url isn't found in the database list then
         #    we can insert it.
         # Evaluate left hand side first to make fewer reqests to the database
+
         if article_user_url not in profile_url and article_user_id not in unique_users:
-            profile_url.append(user.get_attribute("href"))
+            profile_url.append(article_user_url)
 
-    # Write URL's to a file
     print len(profile_url)
-
     return len(profile_url)
 
 def insert_article_user_comments(browser, db, cursor):
